@@ -19,6 +19,14 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+try:
+    from netfix import bypass_dns
+except ImportError:  # 直接以脚本方式运行时，确保能找到同目录的 netfix.py
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from netfix import bypass_dns
+
 ROOT = Path(__file__).resolve().parent.parent
 CLIENT_ID = "178c6fc778ccc68e1d6a"  # GitHub CLI 的公开 client id，用于设备授权
 API = "https://api.github.com"
@@ -284,6 +292,11 @@ def main() -> int:
 
     files = collect_files()
     print(f"准备上传 {len(files)} 个文件。", flush=True)
+
+    if bypass_dns():
+        print("已绕过本机 hosts 的 GitHub 屏蔽（仅本次运行）。", flush=True)
+    else:
+        print("提示：github.com 连不上，稍后可能会失败。", flush=True)
 
     token = device_login()
     owner, repo = create_repo(token, args.repo)

@@ -371,6 +371,7 @@ def build_song(track: dict, storefront: str, base: str, cover_cache: dict[str, I
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", required=True, help="站点根地址，例如 https://user.github.io/repo/")
+    parser.add_argument("--domain", default="", help="自定义域名，例如 music.example.com（会写入 dist/CNAME）")
     args = parser.parse_args()
 
     base = args.base_url.strip()
@@ -422,6 +423,10 @@ def main() -> int:
     (DIST / "index.html").write_text(
         INDEX_TEMPLATE.format(cards="\n".join(cards)), encoding="utf-8"
     )
+    domain = args.domain.strip().lower().rstrip(".")
+    if domain:
+        (DIST / "CNAME").write_text(domain + "\n", encoding="utf-8")
+        log(f"自定义域名：{domain}（已写入 CNAME）")
     log(f"完成：{len(seen)} 首，失败 {failures} 首 → {DIST}")
     return 0 if seen else 1
 
