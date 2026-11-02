@@ -315,6 +315,7 @@ INDEX_TEMPLATE = """<!doctype html>
   <p class="eyebrow">APPLE MUSIC</p>
   <h1>音乐卡片</h1>
   <p class="index__lead">点开任意一首，就能在 Apple Music 里收听。</p>
+  <a class="index__cta" href="app/">＋ 发布新歌</a>
 </header>
 <main class="grid">
 {cards}
@@ -400,6 +401,12 @@ def main() -> int:
     (DIST / "assets" / "style.css").write_text(
         (ROOT / "assets" / "style.css").read_text(encoding="utf-8"), encoding="utf-8"
     )
+    app_source = ROOT / "assets" / "app.html"
+    if app_source.exists():
+        (DIST / "app").mkdir(parents=True, exist_ok=True)
+        (DIST / "app" / "index.html").write_text(
+            app_source.read_text(encoding="utf-8"), encoding="utf-8"
+        )
 
     cards: list[str] = []
     seen: set[str] = set()

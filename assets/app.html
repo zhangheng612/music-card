@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>发布新歌 · 音乐卡片</title>
+<meta name="theme-color" content="#0b0b0d">
+<meta name="apple-mobile-web-app-title" content="发歌">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body class="app">
+<main class="app__inner">
+  <p class="eyebrow">MUSIC CARD</p>
+  <h1 class="app__title">发布新歌</h1>
+  <p class="app__lead">把 Apple Music 的歌曲链接贴进来，一分钟后就有一条能发朋友圈的链接。</p>
+
+  <section class="panel" id="tokenPanel">
+    <h2 class="panel__title"><span class="step">1</span>连接 GitHub</h2>
+    <p class="panel__hint">只做一次。令牌只存在这台手机的浏览器里，不会上传到别处。</p>
+    <input class="input" id="token" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴 ghp_ 开头的令牌">
+    <button class="button button--ghost" id="saveToken" type="button">保存令牌</button>
+    <p class="fine" id="tokenState"></p>
+    <details class="how">
+      <summary>怎么拿到令牌？</summary>
+      <ol>
+        <li>手机 Safari 打开 <a href="https://github.com/settings/tokens/new?description=music-card&amp;scopes=public_repo" target="_blank" rel="noreferrer">这个页面</a>（要先登录 GitHub）。</li>
+        <li>页面已经填好名字和 <code>public_repo</code> 权限，直接拉到最下面点绿色 <strong>Generate token</strong>。</li>
+        <li>复制 <code>ghp_</code> 开头那串，粘到上面的输入框，保存。</li>
+      </ol>
+      <p>令牌只对公开仓库生效，可以随时在同一个页面 Revoke。</p>
+    </details>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel__title"><span class="step">2</span>贴歌曲链接</h2>
+    <p class="panel__hint">Apple Music 里长按歌曲 → 分享 → 拷贝链接。</p>
+    <input class="input" id="link" type="url" inputmode="url" spellcheck="false" placeholder="https://music.apple.com/cn/album/...">
+    <div class="row">
+      <button class="button button--ghost" id="paste" type="button">读剪贴板</button>
+      <button class="button" id="publish" type="button">发布</button>
+    </div>
+    <p class="fine" id="progress" role="status"></p>
+    <div class="result" id="result" hidden>
+      <p class="result__label">链接好了，复制去发朋友圈：</p>
+      <p class="result__link" id="resultLink"></p>
+      <div class="row">
+        <button class="button" id="copy" type="button">复制链接</button>
+        <a class="button button--ghost" id="open" href="#" target="_blank" rel="noreferrer">打开看看</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="app__footer">
+    <p>发布 = 往 songs.txt 追加一行，GitHub 会自动重建页面。想删歌就在仓库里删掉那一行。</p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var OWNER = 'zhangheng612';
+  var REPO = 'music-card';
+  var API = 'https://api.github.com/repos/' + OWNER + '/' + REPO;
+  var SITE = 'https://' + OWNER + '.github.io/' + REPO + '/';
+  var KEY = 'mc_token';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var tokenInput = $('token');
+  var tokenState = $('tokenState');
+  var linkInput = $('link');
+  var progress = $('progress');
+  var result = $('result');
+  var publishBtn = $('publish');
+
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  function setProgress(text) { progress.textContent = text || ''; }
+
+  function b64encode(text) {
+    var bytes = new TextEncoder().encode(text);
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+
+  function b64decode(text) {
+    var bin = atob(text.replace(/\s/g, ''));
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  function getToken() { return localStorage.getItem(KEY) || ''; }
+
+  async function gh(path, options) {
+    options = options || {};
+    var headers = Object.assign({
+      'Accept': 'application/vnd.github+json',
+      'Authorization': 'Bearer ' + getToken()
+    }, options.headers || {});
+    var res = await fetch(API + path, Object.assign({}, options, { headers: headers }));
+    if (!res.ok) {
+      var message = 'HTTP ' + res.status;
+      try {
+        var data = await res.json();
+        if (data && data.message) message = data.message;
+      } catch (e) {}
+      if (res.status === 401) message = '令牌不对或过期了';
+      if (res.status === 403) message = '令牌没有写入权限';
+      throw new Error(message);
+    }
+    return res.json();
+  }
+
+  function parseTrackId(text) {
+    var url = (String(text).match(/https?:\/\/[^\s"'<>]+/) || [])[0];
+    if (!url) return null;
+    var m = url.match(/[?&]i=(\d+)/);
+    if (m) return m[1];
+    m = url.match(/\/song\/(?:[^\/]+\/)?(\d+)/);
+    if (m) return m[1];
+    return null;
+  }
+
+  function showToken() {
+    var token = getToken();
+    tokenInput.value = token ? '••••••••••••••••' : '';
+    tokenState.textContent = token ? '已保存令牌，可以直接发布。' : '还没保存令牌。';
+  }
+
+  $('saveToken').addEventListener('click', async function () {
+    var token = tokenInput.value.trim();
+    if (!token || token.indexOf('•') === 0) { showToken(); return; }
+    if (!/^(ghp_|github_pat_)/.test(token)) {
+      tokenState.textContent = '看起来不像 GitHub 令牌（应该以 ghp_ 开头）。';
+      return;
+    }
+    localStorage.setItem(KEY, token);
+    tokenState.textContent = '正在验证……';
+    try {
+      await gh('/contents/songs.txt');
+      tokenState.textContent = '连接成功，可以发布了。';
+      tokenInput.value = '••••••••••••••••';
+    } catch (error) {
+      localStorage.removeItem(KEY);
+      tokenState.textContent = '连接失败：' + error.message;
+      tokenInput.value = '';
+    }
+  });
+
+  $('paste').addEventListener('click', async function () {
+    try {
+      var text = await navigator.clipboard.readText();
+      if (text) {
+        linkInput.value = text.trim();
+        setProgress('已从剪贴板读到链接。');
+      } else {
+        setProgress('剪贴板是空的。');
+      }
+    } catch (error) {
+      setProgress('读不到剪贴板，长按输入框手动粘贴吧。');
+    }
+  });
+
+  async function waitForRun(startedAt) {
+    for (var i = 0; i < 42; i++) {
+      await sleep(5000);
+      setProgress('GitHub 正在生成页面…… ' + ((i + 1) * 5) + 's');
+      var res = await fetch('https://api.github.com/repos/' + OWNER + '/' + REPO + '/actions/runs?per_page=1');
+      if (!res.ok) continue;
+      var data = await res.json();
+      var run = data.workflow_runs && data.workflow_runs[0];
+      if (!run) continue;
+      if (new Date(run.created_at).getTime() < new Date(startedAt).getTime() - 5000) continue;
+      if (run.status !== 'completed') continue;
+      if (run.conclusion === 'success') return;
+      throw new Error('构建失败了，去仓库 Actions 页面看看');
+    }
+    throw new Error('等太久了，链接可能已经好了，直接打开试试');
+  }
+
+  function finish(trackId) {
+    var link = SITE + 's/' + trackId + '/?v=' + Date.now();
+    $('resultLink').textContent = link;
+    $('open').setAttribute('href', link);
+    result.hidden = false;
+    setProgress('完成。链接 30 秒内生效。');
+  }
+
+  $('copy').addEventListener('click', async function () {
+    var link = $('resultLink').textContent;
+    try {
+      await navigator.clipboard.writeText(link);
+      setProgress('已复制，去朋友圈粘贴吧。');
+    } catch (error) {
+      setProgress('复制失败，长按上面的链接手动复制。');
+    }
+  });
+
+  publishBtn.addEventListener('click', async function () {
+    if (!getToken()) { setProgress('先在上面保存 GitHub 令牌。'); return; }
+    var trackId = parseTrackId(linkInput.value);
+    if (!trackId) {
+      setProgress('没认出歌曲链接。请用 Apple Music 的「分享 → 拷贝链接」。');
+      return;
+    }
+    publishBtn.disabled = true;
+    result.hidden = true;
+    try {
+      setProgress('读取 songs.txt……');
+      var file = await gh('/contents/songs.txt');
+      var text = b64decode(file.content);
+      if (text.indexOf('i=' + trackId) >= 0 || text.indexOf('/song/' + trackId) >= 0) {
+        finish(trackId);
+        return;
+      }
+      var startedAt = new Date().toISOString();
+      var next = text.replace(/\s*$/, '') + '\nhttps://music.apple.com/cn/song/' + trackId + '\n';
+      setProgress('提交到 GitHub……');
+      await gh('/contents/songs.txt', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'add song ' + trackId + ' from phone',
+          content: b64encode(next),
+          sha: file.sha
+        })
+      });
+      await waitForRun(startedAt);
+      finish(trackId);
+    } catch (error) {
+      setProgress('没成功：' + error.message);
+    } finally {
+      publishBtn.disabled = false;
+    }
+  });
+
+  showToken();
+})();
+</script>
+</body>
+</html>
