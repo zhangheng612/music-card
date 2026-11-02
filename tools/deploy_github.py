@@ -293,8 +293,7 @@ def main() -> int:
     site = enable_pages(token, owner, repo)
     print(f"REPO_URL=https://github.com/{owner}/{repo}", flush=True)
     print(f"SITE_URL={site}", flush=True)
-    if TOKEN_FILE.exists():
-        TOKEN_FILE.unlink()
+    # 保留授权缓存，方便这一轮反复改版重传；全部完成后手动删除
     return 0
 
 

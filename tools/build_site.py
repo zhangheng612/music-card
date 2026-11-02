@@ -266,6 +266,8 @@ SONG_TEMPLATE = """<!doctype html>
 <meta name="twitter:title" content="{title} - {artist}">
 <meta name="twitter:description" content="{meta}">
 <meta name="twitter:image" content="{base}s/{track_id}/og.jpg">
+<meta name="description" content="{title} - {artist} · {meta}">
+<link rel="image_src" href="{base}s/{track_id}/og.jpg">
 <link rel="canonical" href="{base}s/{track_id}/">
 <link rel="stylesheet" href="../../assets/style.css">
 </head>
@@ -279,12 +281,14 @@ SONG_TEMPLATE = """<!doctype html>
   <p class="artist">{artist}</p>
   <p class="meta">{meta}</p>
   <a class="button" href="{store_link}">在 Apple Music 中打开</a>
-  <p class="hint">正在为你打开 Apple Music…如果没有反应，请点上面的按钮。</p>
+  <p class="hint">点上面的按钮，就能在 Apple Music 里打开这首歌。</p>
 </main>
 </div>
 <script>
 (function () {{
-  if (window.location.hash === '#noauto') return;
+  // 默认不自动跳转，避免微信抓分享卡片时抓到 Apple 的页面；?auto=1 才自动打开
+  var query = window.location.search;
+  if (query.indexOf('auto=1') === -1) return;
   var target = document.querySelector('.song').getAttribute('data-redirect');
   if (!target) return;
   setTimeout(function () {{ window.location.replace(target); }}, 900);
@@ -310,7 +314,7 @@ INDEX_TEMPLATE = """<!doctype html>
 <header class="index__header">
   <p class="eyebrow">APPLE MUSIC</p>
   <h1>音乐卡片</h1>
-  <p class="index__lead">点开任意一首，会自动打开 Apple Music。</p>
+  <p class="index__lead">点开任意一首，就能在 Apple Music 里收听。</p>
 </header>
 <main class="grid">
 {cards}
