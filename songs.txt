@@ -1,0 +1,5 @@
+# 一行一个 Apple Music 链接，支持歌曲页、专辑页、apple.co 短链
+# 以 # 开头的是注释，不会生成页面
+# 改完这个文件提交（Commit）后，GitHub Actions 会自动重新生成所有分享页
+
+https://music.apple.com/cn/album/535754551?i=535754673

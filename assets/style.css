@@ -1,0 +1,297 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b0b0d;
+  --text: #ffffff;
+  --secondary: rgba(255, 255, 255, 0.72);
+  --tertiary: rgba(255, 255, 255, 0.46);
+  --line: rgba(255, 255, 255, 0.12);
+  --surface: rgba(255, 255, 255, 0.05);
+  --accent: #fa2d48;
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  color: var(--tertiary);
+  text-transform: uppercase;
+}
+
+/* ---------- 单曲分享页 ---------- */
+
+.song {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: max(24px, env(safe-area-inset-top)) 24px
+    max(28px, env(safe-area-inset-bottom));
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.song__bg {
+  position: absolute;
+  inset: -20%;
+  z-index: 0;
+  background-position: center;
+  background-size: cover;
+  filter: blur(64px) saturate(1.25) brightness(0.42);
+  transform: scale(1.12);
+}
+
+.song__inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.song .eyebrow {
+  margin-bottom: 20px;
+}
+
+.cover {
+  width: min(74vw, 340px);
+  margin: 0 auto;
+  border-radius: var(--radius);
+  box-shadow: 0 26px 64px rgba(0, 0, 0, 0.55);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.title {
+  margin: 28px 0 6px;
+  font-size: clamp(24px, 7vw, 32px);
+  line-height: 1.22;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  word-break: break-word;
+}
+
+.artist {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.4;
+  color: var(--secondary);
+  word-break: break-word;
+}
+
+.meta {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--tertiary);
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  max-width: 340px;
+  margin: 30px auto 0;
+  border-radius: 26px;
+  background: #ffffff;
+  color: #0b0b0d;
+  font-size: 17px;
+  font-weight: 600;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.button:active {
+  opacity: 0.82;
+  transform: scale(0.98);
+}
+
+.hint {
+  margin: 16px 0 0;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--tertiary);
+}
+
+@media (min-width: 720px) {
+  .song__inner {
+    max-width: 460px;
+  }
+
+  .cover {
+    width: 360px;
+  }
+
+  .title {
+    font-size: 36px;
+  }
+}
+
+@media (hover: hover) {
+  .button:hover {
+    opacity: 0.9;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.24);
+  }
+}
+
+/* ---------- 首页列表 ---------- */
+
+.index {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 20px 56px;
+}
+
+.index__header {
+  padding: 8px 0 0;
+}
+
+.index__header h1 {
+  margin: 14px 0 8px;
+  font-size: clamp(30px, 8vw, 40px);
+  letter-spacing: -0.02em;
+}
+
+.index__lead {
+  margin: 0;
+  font-size: 15px;
+  color: var(--secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 28px;
+}
+
+@media (min-width: 560px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.card {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.card:active {
+  transform: scale(0.98);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.card__art {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.card__text {
+  display: block;
+  padding: 10px 12px 12px;
+}
+
+.card__text strong {
+  display: block;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.card__text span {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--tertiary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.card__play {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.card__play::after {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 12px;
+  border-style: solid;
+  border-width: 6px 0 6px 10px;
+  border-color: transparent transparent transparent #ffffff;
+}
+
+.index__footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--tertiary);
+}
+
+.index__footer p {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
