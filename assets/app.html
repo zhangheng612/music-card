@@ -91,6 +91,18 @@
 
   function getToken() { return localStorage.getItem(KEY) || ''; }
 
+  async function readScopes(token) {
+    try {
+      var res = await fetch('https://api.github.com/user', {
+        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' }
+      });
+      if (!res.ok) return null;
+      return res.headers.get('x-oauth-scopes');
+    } catch (error) {
+      return null;
+    }
+  }
+
   async function gh(path, options) {
     options = options || {};
     var headers = Object.assign({
@@ -104,9 +116,11 @@
         var data = await res.json();
         if (data && data.message) message = data.message;
       } catch (e) {}
-      if (res.status === 401) message = '令牌不对或过期了';
-      if (res.status === 403) message = '令牌没有写入权限';
-      throw new Error(message);
+      var error = new Error(message);
+      error.status = res.status;
+      if (res.status === 401) error.message = '令牌不对或过期了';
+      if (res.status === 403) error.message = '令牌没有写入权限';
+      throw error;
     }
     return res.json();
   }
@@ -138,8 +152,13 @@
     tokenState.textContent = '正在验证……';
     try {
       await gh('/contents/songs.txt');
-      tokenState.textContent = '连接成功，可以发布了。';
+      var scopes = await readScopes(token);
       tokenInput.value = '••••••••••••••••';
+      if (scopes !== null && !/(^|,\s*)((public_)?repo)(\s*,|$)/.test(scopes)) {
+        tokenState.textContent = '能读到仓库，但这个令牌没有 public_repo 写入权限，发布会失败。';
+        return;
+      }
+      tokenState.textContent = '连接成功，可以发布了。';
     } catch (error) {
       localStorage.removeItem(KEY);
       tokenState.textContent = '连接失败：' + error.message;
@@ -228,7 +247,17 @@
       await waitForRun(startedAt);
       finish(trackId);
     } catch (error) {
-      setProgress('没成功：' + error.message);
+      var message = error.message || '未知错误';
+      if (error.status === 404) {
+        message = '令牌没有写入权限（GitHub 对无权写入返回 404）。重新生成令牌时勾选 public_repo。';
+      } else if (error.status === 401) {
+        message = '令牌无效或已过期，重新生成一个。';
+      } else if (error.status === 403) {
+        message = '令牌没有写入权限，或者触发了 GitHub 频率限制。';
+      } else if (error.name === 'TypeError') {
+        message = '连不上 GitHub，换 Safari 打开再试。';
+      }
+      setProgress('没成功：' + message);
     } finally {
       publishBtn.disabled = false;
     }
